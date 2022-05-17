@@ -1,12 +1,6 @@
 defmodule ExmpesaWeb.Mpesa do
-  def lipaNaMpesaOnlinePassKey do
-    "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
-  end
 
-  def lipaNaMpesaOnlineShortCode do
-    "174379"
-  end
-
+  
   def headers() do
     consumer_key = Application.fetch_env!(:mpesa_api, :consumer_key)
     consumer_secret = Application.fetch_env!(:mpesa_api, :consumer_secret)
@@ -26,10 +20,14 @@ defmodule ExmpesaWeb.Mpesa do
     end
   end
 
+  def stk_init_url do
+    "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
+  end
+
   def stk_password do
     timestamp = gen_timesetamps()
-    online_pass_key = Application.fetch_env!(:mpesa_api, :consumer_key)
-    online_short_code = Application.fetch_env!(:mpesa_api, :consumer_secret)
+    online_pass_key = Application.fetch_env!(:mpesa_api, :online_pass_key)
+    online_short_code = Application.fetch_env!(:mpesa_api, :online_short_code)
     Base.encode64("#{online_short_code}#{online_pass_key}#{timestamp}")
   end
 
@@ -47,8 +45,37 @@ defmodule ExmpesaWeb.Mpesa do
     timestamp
   end
 
+  def send_stk(
+        phone,
+        amount,
+        account_reference \\ "Test Payment",
+        transaction_description \\ "Testing"
+      ) do
+    headers = [{"Content-type", "application/json"}, {"Authorization", "Bearer #{auth_token()}"}]
+    timestamp = gen_timesetamps()
+    password = stk_password()
 
-  def send_stk(phone, amount, account_reference ) do
-    headers = [Authorization: "Basic #{auth_token()}"]
+    online_short_code = Application.fetch_env!(:mpesa_api, :online_short_code)
+    call_back_url = Application.fetch_env!(:mpesa_api, :call_back_url)
+
+    body =
+      Poison.encode!(%{
+        "BusinessShortCode" => online_short_code,
+        "Password" => password,
+        "Timestamp" => timestamp,
+        "TransactionType" => "CustomerPayBillOnline",
+        "Amount" => amount,
+        "PartyA"=> phone,
+        "PartyB" => online_short_code,
+        "PhoneNumber"=> phone,
+        "CallBackURL"=> call_back_url,
+        "AccountReference"=> account_reference,
+        "TransactionDesc"=> transaction_description
+      })
+
+    {:ok, response } = HTTPoison.post(stk_init_url(), body, headers)
+    response
   end
+
+
 end

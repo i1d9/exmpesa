@@ -21,7 +21,7 @@ import Config
 config :mpesa_api,
   consumer_key: "YOUR KEY",
   consumer_secret: "YOUR SECRET",
-  call_back_url: "",
+  call_back_url: "YOUR CALL BACK URL TO PROCESS TRANSACTION RESULTS FROM MPESA",
   online_pass_key: "YOUR PASS KEY",
   online_short_code: "YOUR ONLINE SHORT CODE"
 
